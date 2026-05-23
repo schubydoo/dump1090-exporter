@@ -1,30 +1,69 @@
-FROM python:3.10-alpine
+# syntax=docker/dockerfile:1.7
 
-# Preventing Python from writing pyc files to disk
-ENV PYTHONDONTWRITEBYTECODE 1
-# Preventing Python from buffering stdout and stderr
-ENV PYTHONUNBUFFERED 1
+# Pinned uv release used to install the project into a virtualenv. Renovate
+# tracks this via the `ghcr.io/astral-sh/uv` Dockerfile manager.
+ARG UV_VERSION=0.11.14
+ARG PYTHON_VERSION=3.13
 
-# create the app user
-RUN addgroup -S d1090exp && adduser -S d1090exp -G d1090exp
+# --------------------------------------------------------------------------
+# 1. builder — install the project + its locked deps into a venv at /app/.venv
+# --------------------------------------------------------------------------
+FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
 
-COPY ./dist/dump1090exporter-*-py3-none-any.whl /tmp/
+FROM python:${PYTHON_VERSION}-slim AS builder
 
-# install dump1090exporter (including dependencies and requirements)
-RUN \
-  apk update && \
-  apk add --no-cache --virtual .build-deps musl-dev gcc && \
-  pip install pip -U --no-cache-dir && \
-  pip install /tmp/dump1090exporter-*-py3-none-any.whl --no-cache-dir && \
-  apk --purge del .build-deps && \
-  rm -rf /tmp/dump1090exporter-*-py3-none-any.whl
+ENV UV_LINK_MODE=copy \
+    UV_COMPILE_BYTECODE=1 \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_NO_CACHE=1
 
-# switch to non-root user
+# uv is a single static binary; copy it from the official uv image.
+COPY --from=uv /uv /usr/local/bin/uv
+
+WORKDIR /app
+
+# Install deps first (cache-friendly), then the project itself.
+COPY pyproject.toml uv.lock README.md ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --no-install-project
+
+COPY src ./src
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
+
+
+# --------------------------------------------------------------------------
+# 2. runtime — slim final image with just Python + the prebuilt venv
+# --------------------------------------------------------------------------
+FROM python:${PYTHON_VERSION}-slim AS runtime
+
+ARG PYTHON_VERSION
+
+LABEL org.opencontainers.image.title="dump1090exporter" \
+      org.opencontainers.image.description="Prometheus metrics exporter for the dump1090 Mode S decoder." \
+      org.opencontainers.image.source="https://github.com/schubydoo/dump1090-exporter" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.authors="Schuby <schubydoo@users.noreply.github.com>"
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/app/.venv/bin:${PATH}"
+
+# Non-root user; UID/GID are stable so volume permissions are predictable.
+RUN groupadd --system --gid 1000 d1090exp \
+    && useradd --system --uid 1000 --gid d1090exp --shell /usr/sbin/nologin d1090exp
+
+WORKDIR /app
+
+COPY --from=builder --chown=d1090exp:d1090exp /app/.venv /app/.venv
+
 USER d1090exp
 
-WORKDIR /tmp
-
 EXPOSE 9105
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:9105/metrics', timeout=3).status == 200 else 1)" \
+        || exit 1
 
 ENTRYPOINT ["python", "-m", "dump1090exporter"]
 CMD ["--help"]
