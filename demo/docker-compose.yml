@@ -22,7 +22,7 @@ services:
 
   prometheus:
     container_name: prometheus
-    image: prom/prometheus:v3.0.0
+    image: prom/prometheus:v3.11.3
     depends_on:
       - dump1090exporter
     volumes:
@@ -37,7 +37,7 @@ services:
 
   grafana:
     container_name: grafana
-    image: grafana/grafana:11.4.0
+    image: grafana/grafana:11.6.14
     user: "104"
     depends_on:
       - prometheus
