@@ -1,8 +1,14 @@
 # syntax=docker/dockerfile:1.24
 
-# Pinned uv release used to install the project into a virtualenv. Renovate
-# tracks this via the PyPI custom regex manager in renovate.json.
+# Pinned uv release. Renovate's PyPI regex manager (renovate.json) bumps
+# UV_VERSION on the next master scan. The per-arch SHA256 hashes below
+# must update IN LOCKSTEP — refresh them with `tools/update-uv-shas.sh`
+# (or by hand from
+# https://github.com/astral-sh/uv/releases/download/<ver>/dist-manifest.json).
 ARG UV_VERSION=0.11.16
+ARG UV_SHA256_AMD64=1bc4be1be0a000f893b0d1db97906cf392b63fa22fda9a0ecf33d0d4bbb4bc9a
+ARG UV_SHA256_ARM64=ac022d96411143b9a2dd75ea711fa8dd4cd14538bf248f2e5df3c10a80f7f6a4
+ARG UV_SHA256_ARMV7=f24fca34326c5b8f7ddc0001a40e5454bc8091ca67f9ce931ffdaef4ea4815e8
 
 # --------------------------------------------------------------------------
 # 1. builder — install the project + its locked deps into a venv at /app/.venv
@@ -10,29 +16,43 @@ ARG UV_VERSION=0.11.16
 # Pin the base image by digest (tag AND sha256) so Scorecard's
 # Pinned-Dependencies check is satisfied and supply-chain attacks via tag
 # repointing are blocked. Renovate's docker manager bumps tag + digest in
-# the same PR. The PYTHON_VERSION ARG that used to live up top is gone —
-# the version now lives in the image reference itself, where Renovate can
-# track it natively (the previous ARG-indirected form needed a separate
-# custom regex manager and prevented digest pinning).
-#
-# uv is installed via pip rather than the official uv image because Astral's
-# `ghcr.io/astral-sh/uv` image only ships amd64 + arm64 manifests; armv7
-# (which we still target for older Raspberry Pi devices) has no match and
-# the multi-arch build fails to pull. uv DOES publish musllinux + manylinux
-# wheels for armv7 on PyPI, so `pip install uv` works on every arch we ship.
+# the same PR.
 FROM python:3.14-alpine@sha256:5a824eb82cc75361f98611f3cfc5091ea33f10a6ccea4d4ebdabbc523b9a1614 AS builder
 
 # ARGs declared before the first FROM are "global" — they substitute into
 # the FROM line(s) but are invisible to RUN inside the stage unless
-# re-declared here. Without this, ${UV_VERSION} expanded to empty in the
-# pip install below and the build failed with "Invalid requirement: 'uv=='".
+# re-declared here.
 ARG UV_VERSION
+ARG UV_SHA256_AMD64
+ARG UV_SHA256_ARM64
+ARG UV_SHA256_ARMV7
 
 ENV UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
     UV_PYTHON_DOWNLOADS=never
 
-RUN pip install --no-cache-dir "uv==${UV_VERSION}"
+# Install uv by downloading the per-arch static binary from GitHub releases
+# and verifying its SHA256. Replaces the previous `pip install uv==<ver>`
+# which Scorecard flagged (pipCommand not pinned by hash — the install
+# pulled uv + transitive deps from PyPI without `--require-hashes`).
+#
+# Picks the right artifact via `uname -m` because buildx executes the RUN
+# inside the target-arch builder. Astral's official tarballs are statically
+# linked against musl, which matches the alpine base.
+RUN set -eux; \
+    case "$(uname -m)" in \
+        x86_64) target="x86_64-unknown-linux-musl"; expected="${UV_SHA256_AMD64}" ;; \
+        aarch64) target="aarch64-unknown-linux-musl"; expected="${UV_SHA256_ARM64}" ;; \
+        armv7l) target="armv7-unknown-linux-musleabihf"; expected="${UV_SHA256_ARMV7}" ;; \
+        *) echo "Unsupported architecture: $(uname -m)" >&2; exit 1 ;; \
+    esac; \
+    cd /tmp; \
+    wget -q -O uv.tar.gz "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-${target}.tar.gz"; \
+    echo "${expected}  uv.tar.gz" | sha256sum -c -; \
+    tar -xzf uv.tar.gz; \
+    mv "uv-${target}/uv" "uv-${target}/uvx" /usr/local/bin/; \
+    rm -rf "uv-${target}" uv.tar.gz; \
+    uv --version
 
 WORKDIR /app
 
