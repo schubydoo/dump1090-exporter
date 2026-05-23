@@ -171,15 +171,6 @@ jobs:
         with:
           persist-credentials: false
       - name: Dependency Review
-        # `continue-on-error` because dependency-review-action requires GitHub's
-        # Dependency Graph to be enabled on the repo. Forks have it disabled by
-        # default and there's no API to flip it on — the user has to enable it
-        # in Settings → Security → "Dependency graph". Until then the action
-        # exits non-zero with "not supported on this repository", which we
-        # don't want blocking PRs. Flip this back to a hard fail once dep graph
-        # is on (or the dep graph indexer has settled and the action stops
-        # rejecting the repo).
-        continue-on-error: true
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: high
