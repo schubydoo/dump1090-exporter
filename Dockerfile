@@ -8,16 +8,16 @@ ARG PYTHON_VERSION=3.13
 # --------------------------------------------------------------------------
 # 1. builder — install the project + its locked deps into a venv at /app/.venv
 # --------------------------------------------------------------------------
+# The `uv` binary is statically linked, so the source image's libc doesn't
+# matter — we just COPY /uv across into the alpine builder.
 FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
 
-FROM python:${PYTHON_VERSION}-slim AS builder
+FROM python:${PYTHON_VERSION}-alpine AS builder
 
 ENV UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
-    UV_PYTHON_DOWNLOADS=never \
-    UV_NO_CACHE=1
+    UV_PYTHON_DOWNLOADS=never
 
-# uv is a single static binary; copy it from the official uv image.
 COPY --from=uv /uv /usr/local/bin/uv
 
 WORKDIR /app
@@ -38,11 +38,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 
 # --------------------------------------------------------------------------
-# 2. runtime — slim final image with just Python + the prebuilt venv
+# 2. runtime — alpine final image with just Python + the prebuilt venv
 # --------------------------------------------------------------------------
-FROM python:${PYTHON_VERSION}-slim AS runtime
-
-ARG PYTHON_VERSION
+FROM python:${PYTHON_VERSION}-alpine AS runtime
 
 LABEL org.opencontainers.image.title="dump1090exporter" \
       org.opencontainers.image.description="Prometheus metrics exporter for the dump1090 Mode S decoder." \
@@ -54,9 +52,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/app/.venv/bin:${PATH}"
 
-# Non-root user; UID/GID are stable so volume permissions are predictable.
-RUN groupadd --system --gid 1000 d1090exp \
-    && useradd --system --uid 1000 --gid d1090exp --shell /usr/sbin/nologin d1090exp
+# Non-root user; UID/GID 1000 is stable so bind-mounted volume permissions
+# are predictable on hosts that map UIDs 1:1 (e.g. balena devices).
+RUN addgroup -S -g 1000 d1090exp \
+    && adduser -S -u 1000 -G d1090exp -H -h /app -s /sbin/nologin d1090exp
 
 WORKDIR /app
 
