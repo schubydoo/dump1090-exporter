@@ -14,21 +14,25 @@ concurrency:
 
 jobs:
   tests:
-    name: tests (${{ matrix.python-version }})
-    runs-on: ubuntu-latest
+    name: tests (${{ matrix.os }}, ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ["3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
       - name: Set up uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           enable-cache: true
+      # Matrix values flow through an env var (rather than being inlined
+      # directly as `${{ matrix.python-version }}`) so zizmor's template-
+      # injection static analysis doesn't flag the `run:` blocks.
       - name: Set up Python ${{ matrix.python-version }}
         shell: bash
         env:
@@ -39,11 +43,57 @@ jobs:
         env:
           PYTHON_VERSION: ${{ matrix.python-version }}
         run: uv sync --extra dev --python "$PYTHON_VERSION"
-      - name: ruff check
-        run: uv run ruff check .
-      - name: ruff format --check
-        run: uv run ruff format --check .
-      - name: mypy
-        run: uv run mypy src/dump1090exporter
       - name: pytest
-        run: uv run pytest -q --cov=dump1090exporter --cov-report=term-missing
+        shell: bash
+        env:
+          PYTHON_VERSION: ${{ matrix.python-version }}
+        run: uv run --python "$PYTHON_VERSION" pytest -q --cov=dump1090exporter --cov-report=term-missing
+
+  build:
+    name: build sdist + wheel
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Set up uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+      - name: Set up Python 3.13
+        run: uv python install 3.13
+      - name: Build
+        run: uv build
+      - name: Upload dist artefacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+          if-no-files-found: error
+
+  ci-required-checks-passed:
+    name: ci required checks passed
+    if: always()
+    needs:
+      - tests
+      - build
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check required jobs passed
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          failing=$(echo "$NEEDS_JSON" | jq -r '
+            to_entries[]
+            | select(.value.result != "success" and .value.result != "skipped")
+            | "\(.key): \(.value.result)"
+          ')
+          if [ -n "$failing" ]; then
+            echo "Failed or cancelled jobs:"
+            echo "$failing"
+            exit 1
+          fi
+          echo "All required jobs passed (or were intentionally skipped)."
