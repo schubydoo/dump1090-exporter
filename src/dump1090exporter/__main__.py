@@ -7,7 +7,9 @@ import asyncio
 import contextlib
 import logging
 import signal
+import sys
 
+from . import __version__
 from .exporter import Dump1090Exporter
 
 try:
@@ -29,6 +31,11 @@ DEFAULT_LOGGING_LEVEL = "info"
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="dump1090exporter", description="dump1090 Prometheus Exporter"
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"dump1090exporter {__version__} (Python {sys.version.split()[0]})",
     )
     parser.add_argument(
         "--resource-path",
@@ -149,6 +156,14 @@ def main() -> None:
         format="%(asctime)s.%(msecs)03.0f [%(levelname)s] [%(name)s] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
         level=getattr(logging, args.log_level.upper()),
+    )
+
+    log = logging.getLogger(__name__)
+    log.info(
+        "dump1090exporter %s (Python %s, uvloop=%s)",
+        __version__,
+        sys.version.split()[0],
+        "enabled" if uvloop is not None else "disabled",
     )
 
     if uvloop is not None:
