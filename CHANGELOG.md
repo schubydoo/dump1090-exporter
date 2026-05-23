@@ -7,6 +7,27 @@ documented in this file. The format follows
 automated by [Release Please](https://github.com/googleapis/release-please)
 from Conventional Commit messages on `master`.
 
+## [0.2.0](https://github.com/schubydoo/dump1090-exporter/compare/v0.1.0...v0.2.0) (2026-05-23)
+
+
+### Features
+
+* **cli:** add --version flag and startup version log ([#15](https://github.com/schubydoo/dump1090-exporter/issues/15)) ([09a6218](https://github.com/schubydoo/dump1090-exporter/commit/09a621853b4974824dad8f8127178436dc05d56a))
+
+
+### Bug Fixes
+
+* **docker:** install project non-editable so the venv survives stage copy ([#14](https://github.com/schubydoo/dump1090-exporter/issues/14)) ([0a1c1bf](https://github.com/schubydoo/dump1090-exporter/commit/0a1c1bf8bf1ca445ce6e817f11452372e6cedbea))
+* **docker:** install uv from a hash-verified binary, not pip ([#25](https://github.com/schubydoo/dump1090-exporter/issues/25)) ([49f9af3](https://github.com/schubydoo/dump1090-exporter/commit/49f9af38033f5f766313267317e61c50c4ae033d))
+* **docker:** pin Python base image by digest (closes Scorecard alerts) ([#24](https://github.com/schubydoo/dump1090-exporter/issues/24)) ([905eb62](https://github.com/schubydoo/dump1090-exporter/commit/905eb62cf14ab700b1e4cb8b2d232c15b1a7f867))
+
+
+### Build System & Dependencies
+
+* **demo:** pin demo stack images and group them in renovate ([#12](https://github.com/schubydoo/dump1090-exporter/issues/12)) ([b4bcefc](https://github.com/schubydoo/dump1090-exporter/commit/b4bcefce6033b7cad06aeda874c2d94922ee2733))
+* **docker:** switch to alpine and beef up image-smoke ([#16](https://github.com/schubydoo/dump1090-exporter/issues/16)) ([6836d12](https://github.com/schubydoo/dump1090-exporter/commit/6836d12350a46f8b2262a7b58159ec8bdc0871c8))
+* modernize Dockerfile with multi-stage uv-based build ([#3](https://github.com/schubydoo/dump1090-exporter/issues/3)) ([e53ae40](https://github.com/schubydoo/dump1090-exporter/commit/e53ae400ec264b1bc63be67ed4168e91864b14ec))
+
 ## [0.1.0] - 2026-05-23
 
 Initial release under the `schubydoo/dump1090-exporter` fork. Brings the
