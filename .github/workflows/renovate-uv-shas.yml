@@ -8,8 +8,8 @@ name: Renovate — refresh uv SHAs
 #
 # Why it's only Renovate-driven: human-authored UV_VERSION bumps are rare
 # and the maintainer would just run the script locally. Filtering on
-# `github.actor == 'renovate[bot]'` also prevents the workflow from looping
-# on its own auto-commits.
+# `pull_request.user.login == 'renovate[bot]'` also prevents the workflow
+# from looping on its own auto-commits.
 #
 # Push-token note: reuses the same RELEASE_PLEASE_TOKEN PAT (Contents:write
 # + Pull requests:write on this repo) — same blast radius as release-please,
@@ -34,10 +34,13 @@ jobs:
   refresh:
     name: refresh uv SHA256 ARGs
     # Same-repo PR from Renovate only — fork PRs can't push and shouldn't
-    # be trusted to drive a token-using job anyway.
+    # be trusted to drive a token-using job anyway. Use
+    # `pull_request.user.login` (the PR opener, fixed at creation) rather
+    # than `github.actor` (the last pusher, spoofable on synchronize
+    # events) per zizmor's spoofable-bot-actor check.
     if: >-
       github.event.pull_request.head.repo.full_name == github.repository
-      && github.actor == 'renovate[bot]'
+      && github.event.pull_request.user.login == 'renovate[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
