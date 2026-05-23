@@ -7,71 +7,124 @@ documented in this file. The format follows
 automated by [Release Please](https://github.com/googleapis/release-please)
 from Conventional Commit messages on `master`.
 
-## [0.2.0](https://github.com/schubydoo/dump1090-exporter/compare/v0.1.0...v0.2.0) (2026-05-23)
+## [0.2.0](https://github.com/schubydoo/dump1090-exporter/compare/v0.1.0...v0.2.0) - 2026-05-23
 
+**First published release of the modernized fork.** `v0.1.0` was a
+placeholder version in the manifest; this is the first tag with a real
+multi-arch GHCR image, an automated release pipeline, and a security
+baseline. If you're coming from upstream `claws/dump1090-exporter 22.x`,
+this is the snapshot to upgrade to.
 
-### Features
+### Highlights for consumers
 
-* **cli:** add --version flag and startup version log ([#15](https://github.com/schubydoo/dump1090-exporter/issues/15)) ([09a6218](https://github.com/schubydoo/dump1090-exporter/commit/09a621853b4974824dad8f8127178436dc05d56a))
+- **Multi-arch container image** published to GHCR for every release:
+  `ghcr.io/schubydoo/dump1090-exporter:0.2.0` (and `:0.2`, `:0`, `:latest`).
+  Built for `linux/amd64`, `linux/arm64`, and `linux/arm/v7` — covers
+  amd64 hosts, modern Raspberry Pi (4/5, CM4, Zero 2W in 64-bit mode), and
+  older 32-bit Pis. Signed keyless via cosign; SLSA provenance + SBOM
+  attestations attached. ~80 MB compressed on `python:3.14-alpine`.
+- **`--version` CLI flag** (and a matching startup log line) so you can
+  identify which exporter version is actually running in a container or
+  service.
+- **Same metric names as upstream.** No renames; existing Grafana dashboards
+  (including the long-standing [dashboard 768](https://grafana.com/grafana/dashboards/768))
+  keep working untouched.
+- **Same CLI surface as upstream** plus `--version`. Existing deployments
+  drop in as-is.
 
+### Highlights for maintainers / contributors
 
-### Bug Fixes
+- **Python support:** 3.11, 3.12, 3.13 (test matrix). The published Docker
+  image runs on Python 3.14. Upstream dropped 3.6–3.10 here as part of the
+  modernization — those versions are EOL or imminent EOL.
+- **Toolchain:** `pyproject.toml` + `uv` + `ruff` + `mypy` + `pytest` /
+  `pytest-asyncio`. `setup.py`, `requirements*.txt`, `Makefile`, `.pylintrc`,
+  `.coveragerc`, and the dead `asynctest` dep are gone.
+- **Test coverage** raised from 68% (upstream) to 90%+ with new unit tests
+  for the geometry helpers, every `_fetch` error branch, `process_stats` /
+  `process_aircraft` edge cases, and the CLI. An 85% floor in
+  `pyproject.toml` catches future regressions.
+- **CI** — modern workflows with every third-party action pinned to a
+  commit SHA:
+  - `ci.yml` — plan job that trims the matrix on docs-only PRs, full
+    3 OS × 3 Python on master push, sdist+wheel build, and an image-smoke
+    job that cross-builds `arm64`+`armv7` and curls `/metrics` against
+    the bundled golden-data fixtures.
+  - `lint.yml` — ruff + mypy.
+  - `security.yml` — CodeQL, Gitleaks, Trivy filesystem, zizmor,
+    Dependency Review, all in one consolidated file with file-level gating.
+  - `scorecard.yml` — OSSF Scorecard.
+  - `pr-title.yml` — Conventional Commit title validator.
+  - `release.yml` — multi-arch GHCR publish + cosign sign + SBOM on tag
+    push.
+  - `release-please.yml` — automated release PRs on master push.
+  - `renovate-uv-shas.yml` — auto-refreshes the per-arch uv SHA256 ARGs
+    in the Dockerfile whenever Renovate bumps `UV_VERSION`, so the
+    hash-pinned uv install stays current without manual intervention.
+- **Supply chain** — image is built from a digest-pinned `python:3.14-alpine`
+  base, and `uv` is fetched as a per-arch static binary verified by SHA256
+  (no `pip install` in the build path). Closes every Scorecard
+  Pinned-Dependencies finding.
+- **Dependency management:** Renovate config with grouped/auto-merge rules
+  for ruff / pytest / aio-stack / docker actions / security tooling /
+  astral-sh-uv / demo-stack / release-automation. A custom regex manager
+  tracks the Dockerfile's `UV_VERSION`.
+- **Repo settings:** declarative via Probot Settings (`.github/settings.yml`)
+  — labels (including `autorelease:*` so Release Please's chips survive),
+  squash-merge defaults, branch protection.
 
-* **docker:** install project non-editable so the venv survives stage copy ([#14](https://github.com/schubydoo/dump1090-exporter/issues/14)) ([0a1c1bf](https://github.com/schubydoo/dump1090-exporter/commit/0a1c1bf8bf1ca445ce6e817f11452372e6cedbea))
-* **docker:** install uv from a hash-verified binary, not pip ([#25](https://github.com/schubydoo/dump1090-exporter/issues/25)) ([49f9af3](https://github.com/schubydoo/dump1090-exporter/commit/49f9af38033f5f766313267317e61c50c4ae033d))
-* **docker:** pin Python base image by digest (closes Scorecard alerts) ([#24](https://github.com/schubydoo/dump1090-exporter/issues/24)) ([905eb62](https://github.com/schubydoo/dump1090-exporter/commit/905eb62cf14ab700b1e4cb8b2d232c15b1a7f867))
+### Refactoring (no behavioural change)
 
-
-### Build System & Dependencies
-
-* **demo:** pin demo stack images and group them in renovate ([#12](https://github.com/schubydoo/dump1090-exporter/issues/12)) ([b4bcefc](https://github.com/schubydoo/dump1090-exporter/commit/b4bcefce6033b7cad06aeda874c2d94922ee2733))
-* **docker:** switch to alpine and beef up image-smoke ([#16](https://github.com/schubydoo/dump1090-exporter/issues/16)) ([6836d12](https://github.com/schubydoo/dump1090-exporter/commit/6836d12350a46f8b2262a7b58159ec8bdc0871c8))
-* modernize Dockerfile with multi-stage uv-based build ([#3](https://github.com/schubydoo/dump1090-exporter/issues/3)) ([e53ae40](https://github.com/schubydoo/dump1090-exporter/commit/e53ae400ec264b1bc63be67ed4168e91864b14ec))
-
-## [0.1.0] - 2026-05-23
-
-Initial release under the `schubydoo/dump1090-exporter` fork. Brings the
-project up to current Python tooling, security baseline, and release
-automation without adding new features.
-
-### Build System & Dependencies
-
-- Migrate from `setup.py` + `requirements*.txt` + `asynctest` +
-  `black`/`isort`/`pylint` to `pyproject.toml` + `uv` + `ruff` + `mypy` +
-  `pytest`/`pytest-asyncio`.
-- Drop Python 3.6–3.10 (EOL or imminent EOL); supported versions are now
-  3.11, 3.12, 3.13.
-- Bump `aiohttp` and `aioprometheus` to current versions.
-- Rewrite the Dockerfile as a multi-stage `uv`-based build on
-  `python:3.13-slim`, with OCI labels, a non-root user (UID 1000), and a
-  `HEALTHCHECK` against `/metrics`. Image is published multi-arch
-  (`linux/amd64,linux/arm64,linux/arm/v7`) to GHCR with SBOM, provenance,
-  and a cosign keyless signature on every tag.
-
-### Continuous Integration
-
-- Add modern CI (`ci.yml`, `lint.yml`), comprehensive security workflows
-  (`security.yml` — CodeQL / Gitleaks / Trivy filesystem / zizmor /
-  Dependency Review), OSSF Scorecard, and a Conventional Commits PR-title
-  validator.
-- All third-party actions pinned to commit SHAs; Renovate (`renovate.json`)
-  manages them as grouped weekly PRs and auto-merges patch-level dev tooling
-  bumps.
-- Release Please automates version bumps and `CHANGELOG.md` writes from
-  Conventional Commit messages; tagged releases publish to GHCR via
-  `release.yml`.
-
-### Refactoring
-
-- Drop the deprecated `asyncio.get_event_loop()` / `run_forever()` pattern
-  for `asyncio.run()` with signal-driven shutdown.
-- Replace blanket `except Exception` in the scraper loops with explicit
-  `Dump1090Error`, `OSError`, and `ValueError` handling.
-- Use `aiohttp.ClientTimeout` instead of the deprecated `timeout=` keyword.
+- Replace deprecated `asyncio.get_event_loop()` / `run_forever()` with
+  `asyncio.run()` and signal-driven shutdown (SIGINT/SIGTERM on Linux,
+  KeyboardInterrupt fallback on Windows).
+- Drop blanket `except Exception` in the scraper loops for explicit
+  `Dump1090Error`, `OSError`, `ValueError` handling — real bugs no longer
+  get swallowed.
+- Switch to `aiohttp.ClientTimeout` (the `timeout=` kwarg is deprecated
+  upstream).
 - Type hints modernized to PEP 604 unions and `collections.abc`.
 
 ### Notes
 
-This fork is **not** a successor to the upstream project — it is a
-maintained, up-to-date variant. Credit and attribution go to Chris Laws
-(`claws/dump1090-exporter`) for the original implementation.
+- This fork is **not** a successor to the upstream project — it is a
+  maintained, up-to-date variant. Credit and attribution go to Chris Laws
+  (`claws/dump1090-exporter`) for the original implementation.
+- PyPI publishing is intentionally deferred — only the GHCR image and the
+  GitHub source distribution are produced today.
+
+### Conventional Commit details
+
+Auto-generated from squash-merged PRs since `v0.1.0` (the manifest seed):
+
+#### Features
+
+* **cli:** add `--version` flag and startup version log
+  ([#15](https://github.com/schubydoo/dump1090-exporter/pull/15))
+
+#### Bug Fixes
+
+* **docker:** install uv from a hash-verified binary, not pip
+  ([#25](https://github.com/schubydoo/dump1090-exporter/pull/25))
+* **docker:** pin Python base image by digest
+  ([#24](https://github.com/schubydoo/dump1090-exporter/pull/24))
+* **docker:** install project non-editable so the venv survives the
+  inter-stage copy
+  ([#14](https://github.com/schubydoo/dump1090-exporter/pull/14))
+
+#### Build System & Dependencies
+
+* **docker:** switch to alpine and beef up image-smoke
+  ([#16](https://github.com/schubydoo/dump1090-exporter/pull/16))
+* **demo:** pin demo stack images and group them in renovate
+  ([#12](https://github.com/schubydoo/dump1090-exporter/pull/12))
+* modernize Dockerfile with multi-stage uv-based build
+  ([#3](https://github.com/schubydoo/dump1090-exporter/pull/3))
+
+(`chore`, `ci`, `docs`, `refactor`, `style`, and `test` commits are
+hidden from this section by design — see `release-please-config.json`.)
+
+## [0.1.0] - 2026-05-23
+
+Manifest-only placeholder; never tagged or published. Used as the starting
+point for Release Please. See `v0.2.0` for the first real release.
