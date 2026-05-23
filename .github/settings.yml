@@ -1,0 +1,90 @@
+# Probot Settings (https://github.com/repository-settings/app)
+# Install the GitHub App on this repo to make settings declarative.
+# Note: the App requires `Administration: Read & write` permission on the repo
+# to apply branch protection rules.
+
+repository:
+  name: dump1090-exporter
+  description: >-
+    Prometheus metrics exporter for the dump1090 Mode S decoder. Maintained,
+    up-to-date fork of claws/dump1090-exporter.
+  topics: >-
+    prometheus,monitoring,metrics,dump1090,adsb,mode-s,rtl-sdr,exporter,python
+  homepage: https://github.com/schubydoo/dump1090-exporter
+  has_issues: true
+  has_projects: false
+  has_wiki: false
+  has_downloads: true
+  default_branch: master
+  allow_squash_merge: true
+  allow_merge_commit: false
+  allow_rebase_merge: true
+  allow_auto_merge: true
+  delete_branch_on_merge: true
+  allow_update_branch: true
+  # Web-UI squash defaults. Both default to PR_TITLE / PR_BODY out of the box;
+  # we override:
+  #   - squash_merge_commit_title: COMMIT_OR_PR_TITLE — use the single
+  #     commit's subject when a PR has only one commit, fall back to PR
+  #     title otherwise. Avoids the "(#NN)" suffix duplication.
+  #   - squash_merge_commit_message: COMMIT_MESSAGES — concatenate the
+  #     branch's commit messages into the squash body. Preserves the
+  #     hand-crafted commit bodies (rationale + Co-Authored-By trailers)
+  #     instead of replacing them with the PR description.
+  # merge_commit_* settings deliberately omitted — allow_merge_commit is
+  # false, so those settings are inert.
+  squash_merge_commit_title: COMMIT_OR_PR_TITLE
+  squash_merge_commit_message: COMMIT_MESSAGES
+
+# Labels managed declaratively by Probot. Anything in the repo not listed here
+# is left alone (Probot doesn't delete by default). Standard GitHub-created
+# labels (bug, enhancement, documentation, etc.) are intentionally omitted —
+# the repo keeps them, we just don't manage them from here.
+labels:
+  - name: dependencies
+    color: ededed
+    description: Renovate-opened dependency update PRs (and the dashboard issue)
+  - name: security
+    color: d93f0b
+    description: Security-related — Renovate vulnerability alerts use this
+
+branches:
+  - name: master
+    protection:
+      required_pull_request_reviews:
+        required_approving_review_count: 0
+        dismiss_stale_reviews: true
+        require_code_owner_reviews: false
+      required_status_checks:
+        # Context names must match the check-run names GitHub records exactly
+        # — that's the job's `name:` field, not "workflow / job". The check
+        # must also have run on the repo at least once before it can be
+        # marked required.
+        #
+        # Aggregator pattern (mirrors dockerize2):
+        #  - `ci required checks passed` is ci.yml's aggregator (needs:
+        #    tests, build). Add a new ci.yml job by appending to that
+        #    `needs:` list — do NOT add the individual check name here.
+        #  - `security required checks passed` is security.yml's
+        #    aggregator (needs: changes, codeql, gitleaks, trivy-fs,
+        #    zizmor, dependency-review).
+        #  - `conventional PR title` (pr-title.yml) gates the squash-merge
+        #    subject, which is what Release Please parses.
+        #
+        # `OSSF Scorecard` is intentionally NOT required: scorecard.yml
+        # only triggers on push + schedule + branch_protection_rule, so
+        # requiring it would leave every PR perpetually pending.
+        strict: true
+        contexts:
+          - "ci required checks passed"
+          - "security required checks passed"
+          - "conventional PR title"
+      # `null` (not `false`) — the Probot Settings App rejects `false` here
+      # silently. See repository-settings/app#923.
+      enforce_admins: null
+      required_linear_history: true
+      allow_force_pushes: false
+      allow_deletions: false
+      required_conversation_resolution: true
+      # Same `null`-vs-empty-array gotcha; explicit `null` for safety.
+      restrictions: null
