@@ -198,23 +198,37 @@ jobs:
           if-no-files-found: error
 
   # --------------------------------------------------------------------
-  # Image smoke — builds the multi-stage Dockerfile (amd64, --load) and
-  # exercises `--help` inside the container. Gated on image_changed so
-  # docs-only / workflow-only PRs don't pay the build cost. Always runs
-  # on master push to keep the baseline tracked.
+  # Image smoke — three things, in order of cost:
+  #   1. Build the multi-stage Dockerfile for amd64 (load) and exercise
+  #      the actual metrics server against the bundled golden-data
+  #      fixtures. Catches editable-install regressions, broken aiohttp
+  #      C extensions, wrong PYTHONPATH, etc — everything `--help`
+  #      doesn't.
+  #   2. Cross-build for arm64 and armv7 under QEMU (no load). Catches
+  #      musllinux wheel gaps and arm-specific build breaks BEFORE
+  #      release.yml tries to publish the multi-arch manifest. Per the
+  #      dockerize2 lesson "default buildx driver lies", we deliberately
+  #      use the same docker-container driver release.yml will use.
+  #   3. Size guard on the loaded amd64 image — catches accidental
+  #      base/dep bloat.
+  #
+  # Gated on image_changed so docs-only / workflow-only PRs don't pay
+  # the build cost. Always runs on master push to keep the baseline.
   # --------------------------------------------------------------------
   image-smoke:
     name: image smoke
     needs: plan
     if: needs.plan.outputs.run_image_smoke == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
       - name: Set up Buildx
         uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
       - name: Build image (amd64, load)
@@ -226,21 +240,69 @@ jobs:
           tags: dump1090exporter:smoke
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Functional smoke — --help exits cleanly
+      - name: Functional smoke — exporter serves /metrics with golden data
+        # Runs the container in file-resource mode against the test
+        # fixtures shipped in tests/golden-data/, waits for /metrics to
+        # come up, and asserts the canonical metric names are present.
+        # Catches the kind of breakage `--help` can't (e.g. the
+        # editable-install bug fixed in #14).
         run: |
           set -euo pipefail
-          docker run --rm dump1090exporter:smoke --help | head -5
-      - name: Size guard — image must stay reasonable (< 250 MB compressed)
-        # python:3.13-slim base + venv. 250 MB compressed leaves headroom
-        # for normal base / deps bumps but catches accidental ~50 MB
-        # additions (a stranded apt layer, an unintended dev dep, etc).
+          docker run -d --name d1090smoke \
+            -v "$PWD/tests/golden-data:/data:ro" \
+            -p 9105:9105 \
+            dump1090exporter:smoke \
+            --resource-path=/data \
+            --latitude=-34.9285 \
+            --longitude=138.6007 \
+            --log-level=debug
+
+          # Poll for the metrics server up to ~30s.
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:9105/metrics >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+
+          # Capture once, sanity-check multiple invariants.
+          body=$(curl -fsS http://127.0.0.1:9105/metrics)
+          echo "---- /metrics (first 30 lines) ----"
+          echo "$body" | head -30
+          echo "---- container logs (first 30 lines) ----"
+          docker logs d1090smoke 2>&1 | head -30
+
+          # Required: the three core gauge labels are present and namespaced.
+          echo "$body" | grep -q '^dump1090_messages_total{'
+          echo "$body" | grep -q '^dump1090_recent_aircraft_observed{'
+          echo "$body" | grep -q '^dump1090_stats_messages_total{'
+
+          docker rm -f d1090smoke
+      - name: Cross-build image for arm64 + armv7 (no load)
+        # Verifies the Dockerfile works under QEMU for the two non-amd64
+        # arches the release pipeline ships. Catches musllinux wheel
+        # gaps and arm-specific issues before release.yml tries to
+        # publish the multi-arch manifest.
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        with:
+          context: .
+          platforms: linux/arm64,linux/arm/v7
+          push: false
+          tags: dump1090exporter:smoke-arm
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Size guard — image must stay reasonable (< 150 MB compressed)
+        # python:3.13-alpine base + the venv. 150 MB compressed is comfortable
+        # for the alpine variant; the previous slim-based image needed 250 MB.
+        # Catches accidental ~30 MB additions (stranded apk layer, unintended
+        # dev dep, etc).
         run: |
           set -euo pipefail
           bytes=$(docker save dump1090exporter:smoke | gzip -c | wc -c)
           mb=$((bytes / 1024 / 1024))
           echo "Image (docker save | gzip): ${mb} MB (${bytes} bytes)"
-          if [ "$mb" -gt 250 ]; then
-            echo "::error::Image exceeded 250 MB threshold: ${mb} MB"
+          if [ "$mb" -gt 150 ]; then
+            echo "::error::Image exceeded 150 MB threshold: ${mb} MB"
             exit 1
           fi
 

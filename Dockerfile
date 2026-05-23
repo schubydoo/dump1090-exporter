@@ -8,17 +8,24 @@ ARG PYTHON_VERSION=3.13
 # --------------------------------------------------------------------------
 # 1. builder — install the project + its locked deps into a venv at /app/.venv
 # --------------------------------------------------------------------------
-FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
+# uv is installed via pip rather than the official uv image because Astral's
+# `ghcr.io/astral-sh/uv` image only ships amd64 + arm64 manifests; armv7
+# (which we still target for older Raspberry Pi devices) has no match and
+# the multi-arch build fails to pull. uv DOES publish musllinux + manylinux
+# wheels for armv7 on PyPI, so `pip install uv` works on every arch we ship.
+FROM python:${PYTHON_VERSION}-alpine AS builder
 
-FROM python:${PYTHON_VERSION}-slim AS builder
+# ARGs declared before the first FROM are "global" — they substitute into
+# the FROM line(s) but are invisible to RUN inside the stage unless
+# re-declared here. Without this, ${UV_VERSION} expanded to empty in the
+# pip install below and the build failed with "Invalid requirement: 'uv=='".
+ARG UV_VERSION
 
 ENV UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
-    UV_PYTHON_DOWNLOADS=never \
-    UV_NO_CACHE=1
+    UV_PYTHON_DOWNLOADS=never
 
-# uv is a single static binary; copy it from the official uv image.
-COPY --from=uv /uv /usr/local/bin/uv
+RUN pip install --no-cache-dir "uv==${UV_VERSION}"
 
 WORKDIR /app
 
@@ -38,11 +45,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 
 # --------------------------------------------------------------------------
-# 2. runtime — slim final image with just Python + the prebuilt venv
+# 2. runtime — alpine final image with just Python + the prebuilt venv
 # --------------------------------------------------------------------------
-FROM python:${PYTHON_VERSION}-slim AS runtime
-
-ARG PYTHON_VERSION
+FROM python:${PYTHON_VERSION}-alpine AS runtime
 
 LABEL org.opencontainers.image.title="dump1090exporter" \
       org.opencontainers.image.description="Prometheus metrics exporter for the dump1090 Mode S decoder." \
@@ -54,9 +59,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/app/.venv/bin:${PATH}"
 
-# Non-root user; UID/GID are stable so volume permissions are predictable.
-RUN groupadd --system --gid 1000 d1090exp \
-    && useradd --system --uid 1000 --gid d1090exp --shell /usr/sbin/nologin d1090exp
+# Non-root user; UID/GID 1000 is stable so bind-mounted volume permissions
+# are predictable on hosts that map UIDs 1:1 (e.g. balena devices).
+RUN addgroup -S -g 1000 d1090exp \
+    && adduser -S -u 1000 -G d1090exp -H -h /app -s /sbin/nologin d1090exp
 
 WORKDIR /app
 

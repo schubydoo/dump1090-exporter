@@ -23,11 +23,11 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "uv version (pinned in Dockerfile ARG).",
+      "description": "uv version (pinned in Dockerfile ARG). Tracked from PyPI because the Dockerfile installs uv via `pip install uv==<ver>` (the official ghcr.io/astral-sh/uv image lacks an armv7 manifest, which we still target).",
       "managerFilePatterns": ["/^Dockerfile$/"],
       "matchStrings": ["ARG UV_VERSION=(?<currentValue>\\S+)"],
-      "depNameTemplate": "ghcr.io/astral-sh/uv",
-      "datasourceTemplate": "docker"
+      "depNameTemplate": "uv",
+      "datasourceTemplate": "pypi"
     },
     {
       "customType": "regex",
@@ -94,11 +94,10 @@
       "groupName": "security tooling actions"
     },
     {
-      "description": "Group astral-sh/uv updates across the GitHub Action (setup-uv) and the Dockerfile image (ghcr.io/astral-sh/uv) — they release in lockstep.",
+      "description": "Group astral-sh/uv updates across the GitHub Action (setup-uv) and the Dockerfile pip-installed package (uv on PyPI) — they release in lockstep.",
       "matchPackageNames": [
         "astral-sh/setup-uv",
-        "astral-sh/uv",
-        "ghcr.io/astral-sh/uv"
+        "uv"
       ],
       "groupName": "astral-sh/uv"
     },
