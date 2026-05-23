@@ -107,7 +107,11 @@ show_error_codes = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra --strict-markers"
+# --cov-fail-under is intentionally set a few points below the actual
+# coverage (currently ~90%) so normal churn (a new uncovered error-handler
+# path, a moved branch) doesn't break the suite. Raise it when coverage
+# climbs and stays climbed.
+addopts = "-ra --strict-markers --cov=dump1090exporter --cov-report=term-missing --cov-fail-under=85"
 asyncio_mode = "auto"
 
 [tool.coverage.run]
