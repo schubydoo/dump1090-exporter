@@ -1,4 +1,6 @@
-version: '3'
+# Demo stack: dump1090-exporter wired into Prometheus + Grafana for local
+# experimentation. Container images are pinned so Renovate can track them.
+# `version:` is intentionally omitted — Compose v2 ignores it.
 
 volumes:
   grafana_data: {}
@@ -8,24 +10,24 @@ services:
 
   dump1090exporter:
     container_name: dump1090exporter
-    build: ${PWD}/..
+    build: ..
     ports:
       - "9105:9105"
     restart: always
     stop_signal: SIGINT
-    command: [
-      "--resource-path=http://192.168.1.201:8080",
-      "--latitude=-34.9285",
-      "--longitude=138.6007"]
+    command:
+      - "--resource-path=http://192.168.1.201:8080"
+      - "--latitude=-34.9285"
+      - "--longitude=138.6007"
 
   prometheus:
     container_name: prometheus
-    image: prom/prometheus
+    image: prom/prometheus:v3.0.0
     depends_on:
       - dump1090exporter
     volumes:
-      - ${PWD}/prometheus/:/etc/prometheus/
-      - ${PWD}/prometheus:/prometheus
+      - ./prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -34,15 +36,16 @@ services:
     restart: always
 
   grafana:
-    image: grafana/grafana
+    container_name: grafana
+    image: grafana/grafana:11.4.0
     user: "104"
     depends_on:
       - prometheus
     ports:
       - 3000:3000
     volumes:
-      - ${PWD}/grafana:/var/lib/grafana
-      - ${PWD}/grafana/provisioning/:/etc/grafana/provisioning/
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
     env_file:
       - ./grafana/config.monitoring
     restart: always

@@ -101,6 +101,24 @@
         "ghcr.io/astral-sh/uv"
       ],
       "groupName": "astral-sh/uv"
+    },
+    {
+      "description": "Group the demo stack images (prom/prometheus + grafana/grafana). They're only used by the local demo Compose file, so a single grouped PR keeps the noise down.",
+      "matchManagers": ["docker-compose"],
+      "matchPackageNames": [
+        "prom/prometheus",
+        "grafana/grafana"
+      ],
+      "groupName": "demo stack"
+    },
+    {
+      "description": "Group release-automation actions (release-please + amannn semantic PR title). Both feed the squash-merge → release-please pipeline and tend to need joint review when major versions move.",
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": [
+        "googleapis/release-please-action",
+        "amannn/action-semantic-pull-request"
+      ],
+      "groupName": "release automation actions"
     }
   ]
 }
