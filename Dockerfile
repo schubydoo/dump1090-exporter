@@ -1,19 +1,26 @@
 # syntax=docker/dockerfile:1.24
 
 # Pinned uv release used to install the project into a virtualenv. Renovate
-# tracks this via the `ghcr.io/astral-sh/uv` Dockerfile manager.
+# tracks this via the PyPI custom regex manager in renovate.json.
 ARG UV_VERSION=0.11.16
-ARG PYTHON_VERSION=3.14
 
 # --------------------------------------------------------------------------
 # 1. builder — install the project + its locked deps into a venv at /app/.venv
 # --------------------------------------------------------------------------
+# Pin the base image by digest (tag AND sha256) so Scorecard's
+# Pinned-Dependencies check is satisfied and supply-chain attacks via tag
+# repointing are blocked. Renovate's docker manager bumps tag + digest in
+# the same PR. The PYTHON_VERSION ARG that used to live up top is gone —
+# the version now lives in the image reference itself, where Renovate can
+# track it natively (the previous ARG-indirected form needed a separate
+# custom regex manager and prevented digest pinning).
+#
 # uv is installed via pip rather than the official uv image because Astral's
 # `ghcr.io/astral-sh/uv` image only ships amd64 + arm64 manifests; armv7
 # (which we still target for older Raspberry Pi devices) has no match and
 # the multi-arch build fails to pull. uv DOES publish musllinux + manylinux
 # wheels for armv7 on PyPI, so `pip install uv` works on every arch we ship.
-FROM python:${PYTHON_VERSION}-alpine AS builder
+FROM python:3.14-alpine@sha256:5a824eb82cc75361f98611f3cfc5091ea33f10a6ccea4d4ebdabbc523b9a1614 AS builder
 
 # ARGs declared before the first FROM are "global" — they substitute into
 # the FROM line(s) but are invisible to RUN inside the stage unless
@@ -47,7 +54,10 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # --------------------------------------------------------------------------
 # 2. runtime — alpine final image with just Python + the prebuilt venv
 # --------------------------------------------------------------------------
-FROM python:${PYTHON_VERSION}-alpine AS runtime
+# Same digest as the builder — keep them in lockstep so the venv built
+# against builder's libpython matches runtime's. Renovate's docker manager
+# bumps every `python:X.Y-alpine@sha256:...` reference in a single PR.
+FROM python:3.14-alpine@sha256:5a824eb82cc75361f98611f3cfc5091ea33f10a6ccea4d4ebdabbc523b9a1614 AS runtime
 
 LABEL org.opencontainers.image.title="dump1090exporter" \
       org.opencontainers.image.description="Prometheus metrics exporter for the dump1090 Mode S decoder." \

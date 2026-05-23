@@ -29,14 +29,6 @@
       "depNameTemplate": "uv",
       "datasourceTemplate": "pypi"
     },
-    {
-      "customType": "regex",
-      "description": "Python runtime version (pinned in Dockerfile ARG).",
-      "managerFilePatterns": ["/^Dockerfile$/"],
-      "matchStrings": ["ARG PYTHON_VERSION=(?<currentValue>\\S+)"],
-      "depNameTemplate": "python",
-      "datasourceTemplate": "docker"
-    }
   ],
   "packageRules": [
     {
