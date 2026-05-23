@@ -47,6 +47,12 @@ labels:
   - name: security
     color: d93f0b
     description: Security-related — Renovate vulnerability alerts use this
+  - name: "test:full"
+    color: "0052cc"
+    description: "Expand CI matrix to 3 OS × 3 Python on this PR (opt-in)"
+  - name: "test:skip"
+    color: 6e7681
+    description: "Skip tests + image-smoke (CI plumbing PRs only)"
 
 branches:
   - name: master
