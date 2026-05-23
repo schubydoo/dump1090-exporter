@@ -46,7 +46,9 @@ To extract the totals since the dump1090 application started:
 
 """
 
-Specs = {
+from typing import Any
+
+Specs: dict[str, Any] = {
     "aircraft": (
         (
             "observed",
@@ -86,9 +88,7 @@ Specs = {
     ),
     "stats": {
         # top level items not in a sub-group are listed under this empty key.
-        "": (
-            ("messages", "stats_messages_total", "Number of Mode-S messages processed"),
-        ),
+        "": (("messages", "stats_messages_total", "Number of Mode-S messages processed"),),
         "cpr": (
             (
                 "airborne",

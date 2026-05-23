@@ -1,0 +1,45 @@
+# Keep the build context tight so docker rebuilds are fast and reproducible.
+
+.git/
+.github/
+.gitignore
+.gitattributes
+
+# Build artefacts
+build/
+dist/
+*.egg-info/
+__pycache__/
+*.py[cod]
+
+# Tests + dev
+tests/
+.venv/
+.uv-cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Docs / media
+demo/
+grafana-dashboard/
+*.md
+!README.md
+screenshot-*.png
+
+# Local-only files
+Dockerfile
+.dockerignore
+.env
+.env.*
+*.swp
+.idea/
+.vscode/
+.claude/
+.gitnexus/
+AGENTS.md
+CLAUDE.md
