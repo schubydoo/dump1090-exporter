@@ -1,20 +1,23 @@
+"""Command-line entry point for the dump1090exporter."""
+
+from __future__ import annotations
+
 import argparse
 import asyncio
+import contextlib
 import logging
+import signal
 
 from .exporter import Dump1090Exporter
 
-# try to import uvloop - optional
 try:
     import uvloop
-
-    uvloop.install()
 except ImportError:
-    pass
+    uvloop = None
 
 
 DEFAULT_RESOURCE_PATH = "http://localhost:8080/data"
-DEFAULT_HOST = "0.0.0.0"
+DEFAULT_HOST = "0.0.0.0"  # noqa: S104 - exporter is intended to bind all interfaces by default
 DEFAULT_PORT = 9105
 DEFAULT_RECEIVER_REFRESH_INTERVAL = 10
 DEFAULT_AIRCRAFT_REFRESH_INTERVAL = 10
@@ -23,9 +26,7 @@ LOGGING_CHOICES = ["error", "warning", "info", "debug"]
 DEFAULT_LOGGING_LEVEL = "info"
 
 
-def main():
-    """Run the dump1090 Prometheus exporter"""
-
+def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="dump1090exporter", description="dump1090 Prometheus Exporter"
     )
@@ -104,20 +105,14 @@ def main():
         type=str,
         help=f"A logging level from {LOGGING_CHOICES}. Default value is '{DEFAULT_LOGGING_LEVEL}'.",
     )
+    return parser
 
-    args = parser.parse_args()
 
-    logging.basicConfig(
-        format="%(asctime)s.%(msecs)03.0f [%(levelname)s] [%(name)s] %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        level=getattr(logging, args.log_level.upper()),
-    )
+async def _run(args: argparse.Namespace) -> None:
+    origin: tuple[float, float] | None = None
+    if args.latitude is not None and args.longitude is not None:
+        origin = (args.latitude, args.longitude)
 
-    args.origin = None
-    if args.latitude and args.longitude:
-        args.origin = (args.latitude, args.longitude)
-
-    loop = asyncio.get_event_loop()
     mon = Dump1090Exporter(
         resource_path=args.resource_path,
         host=args.host,
@@ -125,17 +120,42 @@ def main():
         aircraft_interval=args.aircraft_interval,
         stats_interval=args.stats_interval,
         receiver_interval=args.receiver_interval,
-        origin=args.origin,
+        origin=origin,
     )
-    loop.run_until_complete(mon.start())
+
+    stop_event = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    for sig_name in ("SIGINT", "SIGTERM"):
+        sig = getattr(signal, sig_name, None)
+        if sig is None:
+            continue
+        # Windows event loop policies don't implement signal handlers; the
+        # KeyboardInterrupt path below handles Ctrl-C there.
+        with contextlib.suppress(NotImplementedError):
+            loop.add_signal_handler(sig, stop_event.set)
+
+    await mon.start()
     try:
-        loop.run_forever()
-    except KeyboardInterrupt:
-        pass
+        await stop_event.wait()
     finally:
-        loop.run_until_complete(mon.stop())
-    loop.stop()
-    loop.close()
+        await mon.stop()
+
+
+def main() -> None:
+    """Run the dump1090 Prometheus exporter."""
+    args = _build_parser().parse_args()
+
+    logging.basicConfig(
+        format="%(asctime)s.%(msecs)03.0f [%(levelname)s] [%(name)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        level=getattr(logging, args.log_level.upper()),
+    )
+
+    if uvloop is not None:
+        uvloop.install()
+
+    with contextlib.suppress(KeyboardInterrupt):
+        asyncio.run(_run(args))
 
 
 if __name__ == "__main__":
