@@ -36,17 +36,38 @@ repository:
   squash_merge_commit_title: COMMIT_OR_PR_TITLE
   squash_merge_commit_message: COMMIT_MESSAGES
 
-# Labels managed declaratively by Probot. Anything in the repo not listed here
-# is left alone (Probot doesn't delete by default). Standard GitHub-created
-# labels (bug, enhancement, documentation, etc.) are intentionally omitted —
-# the repo keeps them, we just don't manage them from here.
+# Labels managed declaratively by Probot. Every label any of our bots
+# applies MUST be listed here — Probot Settings has a long-running issue
+# (repository-settings/app#386) where it deletes labels that aren't
+# declared, and we've watched it strip Renovate's `dependencies` and
+# release-please's `autorelease: *` labels off PRs in real time. Standard
+# GitHub-created labels (bug, enhancement, documentation, etc.) we don't
+# care about are still intentionally omitted; if Probot deletes them we
+# don't notice.
 labels:
+  # ---- Renovate ----
   - name: dependencies
     color: ededed
     description: Renovate-opened dependency update PRs (and the dashboard issue)
   - name: security
     color: d93f0b
     description: Security-related — Renovate vulnerability alerts use this
+
+  # ---- Release Please ----
+  # release-please-action applies these to its release PRs / merged-and-
+  # tagged release commits. Without them declared here, Probot was
+  # stripping them mid-release-flow.
+  - name: "autorelease: pending"
+    color: ededed
+    description: Release Please — release PR is open, awaiting merge
+  - name: "autorelease: tagged"
+    color: 0e8a16
+    description: Release Please — release PR is merged and the tag has been pushed
+  - name: "autorelease: snapshot"
+    color: 5319e7
+    description: Release Please — snapshot/prerelease (rare)
+
+  # ---- CI plan-job opt-ins ----
   - name: "test:full"
     color: "0052cc"
     description: "Expand CI matrix to 3 OS × 3 Python on this PR (opt-in)"
