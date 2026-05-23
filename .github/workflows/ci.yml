@@ -13,15 +13,133 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # --------------------------------------------------------------------
+  # Plan — decides what runs and what matrix shape to use. Mirrors the
+  # pattern from schubydoo/dockerize2.
+  #
+  # On push / schedule / workflow_dispatch: everything runs on the full
+  # 3x3 matrix. The master-push run is the single source of "we tested
+  # on every supported platform."
+  #
+  # On pull_request: detect what changed, default to a single
+  # ubuntu-latest × 3.13 cell (fast, catches >95% of regressions); skip
+  # tests + image-smoke entirely if no Python / Dockerfile / deps moved.
+  #
+  # PR labels:
+  #   test:full  - force the full 3x3 matrix on this PR
+  #   test:skip  - skip tests + image-smoke entirely (e.g. a CI plumbing
+  #                PR that doesn't change the test surface)
+  # --------------------------------------------------------------------
+  plan:
+    name: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      python_changed: ${{ steps.plan.outputs.python_changed }}
+      image_changed: ${{ steps.plan.outputs.image_changed }}
+      run_tests: ${{ steps.plan.outputs.run_tests }}
+      run_image_smoke: ${{ steps.plan.outputs.run_image_smoke }}
+      matrix_os: ${{ steps.plan.outputs.matrix_os }}
+      matrix_python: ${{ steps.plan.outputs.matrix_python }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        if: github.event_name == 'pull_request'
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Plan
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          set -euo pipefail
+
+          # Defaults: non-PR events (push / schedule / dispatch) run the
+          # full suite on the full matrix. master push is the canonical
+          # "full platform coverage" gate.
+          python_changed=true
+          image_changed=true
+          run_tests=true
+          run_image_smoke=true
+          matrix_os='["ubuntu-latest","macos-latest","windows-latest"]'
+          matrix_python='["3.11","3.12","3.13"]'
+
+          if [ "$EVENT" = "pull_request" ]; then
+            git fetch origin "${BASE_REF}" --depth=50
+            files=$(git diff --name-only "origin/${BASE_REF}...HEAD")
+            echo "Changed files:"
+            printf '%s\n' "$files"
+
+            # Detect kind of change.
+            python_changed=false
+            image_changed=false
+            while IFS= read -r f; do
+              [ -z "$f" ] && continue
+              case "$f" in
+                src/*|tests/*|pyproject.toml|uv.lock) python_changed=true ;;
+              esac
+              case "$f" in
+                Dockerfile|.dockerignore|pyproject.toml|uv.lock|src/*) image_changed=true ;;
+              esac
+            done <<< "$files"
+
+            # PR labels.
+            has_full=false
+            has_skip=false
+            if echo "$LABELS" | grep -q '"test:full"'; then has_full=true; fi
+            if echo "$LABELS" | grep -q '"test:skip"'; then has_skip=true; fi
+
+            # Trim PR matrix to one cell unless test:full opts in.
+            if [ "$has_full" = false ]; then
+              matrix_os='["ubuntu-latest"]'
+              matrix_python='["3.13"]'
+            fi
+
+            # Skip optional jobs when nothing relevant changed, or when
+            # the maintainer opts out explicitly.
+            if [ "$has_skip" = true ] || [ "$python_changed" = false ]; then
+              run_tests=false
+            fi
+            if [ "$has_skip" = true ] || [ "$image_changed" = false ]; then
+              run_image_smoke=false
+            fi
+          fi
+
+          {
+            echo "python_changed=$python_changed"
+            echo "image_changed=$image_changed"
+            echo "run_tests=$run_tests"
+            echo "run_image_smoke=$run_image_smoke"
+            echo "matrix_os=$matrix_os"
+            echo "matrix_python=$matrix_python"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "==== Plan ===="
+          echo "  event:           $EVENT"
+          echo "  python_changed:  $python_changed"
+          echo "  image_changed:   $image_changed"
+          echo "  run_tests:       $run_tests"
+          echo "  run_image_smoke: $run_image_smoke"
+          echo "  matrix_os:       $matrix_os"
+          echo "  matrix_python:   $matrix_python"
+
+  # --------------------------------------------------------------------
+  # Unit tests across the planned matrix. PRs default to a single cell;
+  # master push runs the full 3x3.
+  # --------------------------------------------------------------------
   tests:
     name: tests (${{ matrix.os }}, ${{ matrix.python-version }})
+    needs: plan
+    if: needs.plan.outputs.run_tests == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.11", "3.12", "3.13"]
+        os: ${{ fromJSON(needs.plan.outputs.matrix_os) }}
+        python-version: ${{ fromJSON(needs.plan.outputs.matrix_python) }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -31,8 +149,10 @@ jobs:
         with:
           enable-cache: true
       # Matrix values flow through an env var (rather than being inlined
-      # directly as `${{ matrix.python-version }}`) so zizmor's template-
-      # injection static analysis doesn't flag the `run:` blocks.
+      # as `${{ matrix.python-version }}`) so zizmor's template-injection
+      # static analysis doesn't flag the `run:` blocks. The matrix is
+      # hard-coded in the plan job (only ever one of two arrays) and not
+      # derived from any PR-controllable source.
       - name: Set up Python ${{ matrix.python-version }}
         shell: bash
         env:
@@ -49,6 +169,10 @@ jobs:
           PYTHON_VERSION: ${{ matrix.python-version }}
         run: uv run --python "$PYTHON_VERSION" pytest -q --cov=dump1090exporter --cov-report=term-missing
 
+  # --------------------------------------------------------------------
+  # Build sdist + wheel. Cheap; runs on every push and PR so we always
+  # know the package is shippable.
+  # --------------------------------------------------------------------
   build:
     name: build sdist + wheel
     runs-on: ubuntu-latest
@@ -73,12 +197,70 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+  # --------------------------------------------------------------------
+  # Image smoke — builds the multi-stage Dockerfile (amd64, --load) and
+  # exercises `--help` inside the container. Gated on image_changed so
+  # docs-only / workflow-only PRs don't pay the build cost. Always runs
+  # on master push to keep the baseline tracked.
+  # --------------------------------------------------------------------
+  image-smoke:
+    name: image smoke
+    needs: plan
+    if: needs.plan.outputs.run_image_smoke == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+      - name: Build image (amd64, load)
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: dump1090exporter:smoke
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Functional smoke — --help exits cleanly
+        run: |
+          set -euo pipefail
+          docker run --rm dump1090exporter:smoke --help | head -5
+      - name: Size guard — image must stay reasonable (< 250 MB compressed)
+        # python:3.13-slim base + venv. 250 MB compressed leaves headroom
+        # for normal base / deps bumps but catches accidental ~50 MB
+        # additions (a stranded apt layer, an unintended dev dep, etc).
+        run: |
+          set -euo pipefail
+          bytes=$(docker save dump1090exporter:smoke | gzip -c | wc -c)
+          mb=$((bytes / 1024 / 1024))
+          echo "Image (docker save | gzip): ${mb} MB (${bytes} bytes)"
+          if [ "$mb" -gt 250 ]; then
+            echo "::error::Image exceeded 250 MB threshold: ${mb} MB"
+            exit 1
+          fi
+
+  # --------------------------------------------------------------------
+  # Required-checks aggregator. ONE check for branch protection to gate
+  # on regardless of how many underlying jobs exist. `if: always()` so
+  # it runs even when needs failed; jq fails the aggregator iff any
+  # listed job is not success-or-skipped.
+  #
+  # Add a new ci.yml job by appending to `needs:` — nothing else to
+  # change. Branch protection lists this one name.
+  # --------------------------------------------------------------------
   ci-required-checks-passed:
     name: ci required checks passed
     if: always()
     needs:
+      - plan
       - tests
       - build
+      - image-smoke
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
