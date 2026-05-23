@@ -15,6 +15,12 @@ ARG PYTHON_VERSION=3.13
 # wheels for armv7 on PyPI, so `pip install uv` works on every arch we ship.
 FROM python:${PYTHON_VERSION}-alpine AS builder
 
+# ARGs declared before the first FROM are "global" — they substitute into
+# the FROM line(s) but are invisible to RUN inside the stage unless
+# re-declared here. Without this, ${UV_VERSION} expanded to empty in the
+# pip install below and the build failed with "Invalid requirement: 'uv=='".
+ARG UV_VERSION
+
 ENV UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
     UV_PYTHON_DOWNLOADS=never
