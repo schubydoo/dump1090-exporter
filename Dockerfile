@@ -23,13 +23,18 @@ COPY --from=uv /uv /usr/local/bin/uv
 WORKDIR /app
 
 # Install deps first (cache-friendly), then the project itself.
+# `--no-editable` is critical: by default uv installs the local project as an
+# editable .pth link into the venv pointing at /app/src/dump1090exporter. The
+# runtime stage only copies /app/.venv across, so /app/src/ is missing and the
+# editable link breaks at import time. --no-editable bakes a regular wheel
+# install into site-packages instead.
 COPY pyproject.toml uv.lock README.md ./
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-install-project
+    uv sync --frozen --no-dev --no-editable --no-install-project
 
 COPY src ./src
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev
+    uv sync --frozen --no-dev --no-editable
 
 
 # --------------------------------------------------------------------------
