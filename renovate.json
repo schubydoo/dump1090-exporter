@@ -1,0 +1,106 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    ":dependencyDashboard",
+    ":semanticCommits"
+  ],
+  "timezone": "Etc/UTC",
+  "schedule": ["before 7am on monday"],
+  "labels": ["dependencies"],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"]
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 7am on monday"]
+  },
+  "pre-commit": {
+    "enabled": true
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "uv version (pinned in Dockerfile ARG).",
+      "managerFilePatterns": ["/^Dockerfile$/"],
+      "matchStrings": ["ARG UV_VERSION=(?<currentValue>\\S+)"],
+      "depNameTemplate": "ghcr.io/astral-sh/uv",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Python runtime version (pinned in Dockerfile ARG).",
+      "managerFilePatterns": ["/^Dockerfile$/"],
+      "matchStrings": ["ARG PYTHON_VERSION=(?<currentValue>\\S+)"],
+      "depNameTemplate": "python",
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Auto-merge patch updates of dev tooling.",
+      "matchPackageNames": ["ruff", "pytest", "pytest-cov", "pytest-asyncio", "mypy", "pre-commit"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "branch"
+    },
+    {
+      "description": "Group all pytest-related updates.",
+      "matchPackageNames": ["/^pytest/"],
+      "groupName": "pytest"
+    },
+    {
+      "description": "Group all ruff-related updates.",
+      "matchPackageNames": ["/^ruff/"],
+      "groupName": "ruff"
+    },
+    {
+      "description": "Group the aiohttp/aioprometheus pair — they move together.",
+      "matchPackageNames": ["aiohttp", "aioprometheus"],
+      "groupName": "aio-stack"
+    },
+    {
+      "description": "Roll all non-major GitHub Actions updates into one weekly PR.",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "groupName": "github-actions (non-major)"
+    },
+    {
+      "description": "Group docker/* official actions on major bumps — they release in lockstep.",
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": [
+        "docker/build-push-action",
+        "docker/login-action",
+        "docker/metadata-action",
+        "docker/setup-buildx-action",
+        "docker/setup-qemu-action"
+      ],
+      "matchUpdateTypes": ["major"],
+      "groupName": "docker/* actions (major)"
+    },
+    {
+      "description": "Group security-tooling actions — they cover the same security.yml scanners and are useful to review together.",
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": [
+        "github/codeql-action",
+        "actions/dependency-review-action",
+        "aquasecurity/trivy-action",
+        "gitleaks/gitleaks-action",
+        "ossf/scorecard-action",
+        "sigstore/cosign-installer"
+      ],
+      "groupName": "security tooling actions"
+    },
+    {
+      "description": "Group astral-sh/uv updates across the GitHub Action (setup-uv) and the Dockerfile image (ghcr.io/astral-sh/uv) — they release in lockstep.",
+      "matchPackageNames": [
+        "astral-sh/setup-uv",
+        "astral-sh/uv",
+        "ghcr.io/astral-sh/uv"
+      ],
+      "groupName": "astral-sh/uv"
+    }
+  ]
+}
