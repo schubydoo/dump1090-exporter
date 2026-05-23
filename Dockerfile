@@ -2,7 +2,7 @@
 
 # Pinned uv release used to install the project into a virtualenv. Renovate
 # tracks this via the `ghcr.io/astral-sh/uv` Dockerfile manager.
-ARG UV_VERSION=0.11.14
+ARG UV_VERSION=0.11.16
 ARG PYTHON_VERSION=3.13
 
 # --------------------------------------------------------------------------
