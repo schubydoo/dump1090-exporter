@@ -1,0 +1,84 @@
+name: Renovate — refresh uv SHAs
+
+# When Renovate opens a PR that bumps `ARG UV_VERSION=` in the Dockerfile,
+# the per-arch `ARG UV_SHA256_*` lines below it become stale. This workflow
+# detects that situation, runs `tools/update-uv-shas.sh` to refresh the
+# three hashes from the new uv release's `dist-manifest.json`, and pushes
+# the result back onto the Renovate PR as a follow-up commit.
+#
+# Why it's only Renovate-driven: human-authored UV_VERSION bumps are rare
+# and the maintainer would just run the script locally. Filtering on
+# `pull_request.user.login == 'renovate[bot]'` also prevents the workflow
+# from looping on its own auto-commits.
+#
+# Push-token note: reuses the same RELEASE_PLEASE_TOKEN PAT (Contents:write
+# + Pull requests:write on this repo) — same blast radius as release-please,
+# no point splitting it into a second secret. GITHUB_TOKEN-pushed commits do
+# NOT re-trigger workflows (GitHub's anti-recursion rule), which is why a
+# PAT is necessary here too.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - Dockerfile
+
+permissions:
+  contents: read
+
+concurrency:
+  group: renovate-uv-shas-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    name: refresh uv SHA256 ARGs
+    # Same-repo PR from Renovate only — fork PRs can't push and shouldn't
+    # be trusted to drive a token-using job anyway. Use
+    # `pull_request.user.login` (the PR opener, fixed at creation) rather
+    # than `github.actor` (the last pusher, spoofable on synchronize
+    # events) per zizmor's spoofable-bot-actor check.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository
+      && github.event.pull_request.user.login == 'renovate[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          # Check out the PR branch directly so any push we make targets
+          # it. Use the PAT so the push re-triggers CI.
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          persist-credentials: true
+          fetch-depth: 0
+      - name: Detect UV_VERSION change
+        id: detect
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if git diff "${BASE_SHA}" -- Dockerfile | grep -qE '^[+-]ARG UV_VERSION='; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "UV_VERSION changed in this PR — will refresh SHAs."
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "UV_VERSION unchanged — nothing to do."
+          fi
+      - name: Refresh SHAs
+        if: steps.detect.outputs.changed == 'true'
+        run: bash tools/update-uv-shas.sh Dockerfile
+      - name: Commit + push if SHAs moved
+        if: steps.detect.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- Dockerfile; then
+            echo "SHAs already match the bumped UV_VERSION — no commit needed."
+            exit 0
+          fi
+          git config user.name  "schubydoo[bot]"
+          git config user.email "schubydoo@users.noreply.github.com"
+          git add Dockerfile
+          git commit -m "fix(docker): refresh uv SHA256 ARGs to match UV_VERSION"
+          git push
