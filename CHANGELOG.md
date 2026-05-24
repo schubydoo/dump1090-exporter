@@ -7,6 +7,13 @@ documented in this file. The format follows
 automated by [Release Please](https://github.com/googleapis/release-please)
 from Conventional Commit messages on `master`.
 
+## [0.3.0](https://github.com/schubydoo/dump1090-exporter/compare/v0.2.0...v0.3.0) (2026-05-24)
+
+
+### Features
+
+* **grafana:** modernize dashboard for Grafana 10+ ([#27](https://github.com/schubydoo/dump1090-exporter/issues/27)) ([0933466](https://github.com/schubydoo/dump1090-exporter/commit/0933466ac98ea4505be0a6eb0e39f45f23729cc9))
+
 ## [0.2.0](https://github.com/schubydoo/dump1090-exporter/compare/v0.1.0...v0.2.0) - 2026-05-23
 
 **First published release of the modernized fork.** `v0.1.0` was a
