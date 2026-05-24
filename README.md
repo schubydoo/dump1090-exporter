@@ -135,9 +135,11 @@ scrape_configs:
 
 ## Visualisation
 
-A [Grafana dashboard (#768)](https://grafana.com/grafana/dashboards/768) was
-published for the upstream project; it works against the same metric names
-this exporter produces.
+A ready-to-import Grafana dashboard ships in
+[`grafana-dashboard/dump1090.json`](grafana-dashboard/dump1090.json). It targets
+Grafana 10+ (schemaVersion 39) and uses the `stat`, `timeseries`, `table`, and
+`text` panel types — import it from **Dashboards → New → Import** and pick your
+Prometheus datasource when prompted.
 
 ![Grafana dashboard](screenshot-grafana.png)
 
