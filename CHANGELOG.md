@@ -7,6 +7,13 @@ documented in this file. The format follows
 automated by [Release Please](https://github.com/googleapis/release-please)
 from Conventional Commit messages on `master`.
 
+## [0.3.1](https://github.com/schubydoo/dump1090-exporter/compare/v0.3.0...v0.3.1) (2026-05-26)
+
+
+### Bug Fixes
+
+* **grafana:** restore stat tile values and All-instance query ([#29](https://github.com/schubydoo/dump1090-exporter/issues/29)) ([654fe0a](https://github.com/schubydoo/dump1090-exporter/commit/654fe0a94fb72ce7f3b0645cba68f123e2f2bce2))
+
 ## [0.3.0](https://github.com/schubydoo/dump1090-exporter/compare/v0.2.0...v0.3.0) (2026-05-24)
 
 
