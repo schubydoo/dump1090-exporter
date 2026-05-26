@@ -92,9 +92,10 @@
           "editorMode": "code",
           "expr": "sum(dump1090_recent_aircraft_observed{job=\"dump1090\", time_period=\"latest\", instance=~\"^$instance$\"})",
           "legendFormat": "",
-          "range": true,
+          "range": false,
           "refId": "A",
-          "intervalFactor": 2
+          "intervalFactor": 2,
+          "instant": true
         }
       ],
       "fieldConfig": {
@@ -123,12 +124,12 @@
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
-            "avg"
+            "lastNotNull"
           ],
           "fields": "",
           "values": false
         },
-        "textMode": "auto",
+        "textMode": "value",
         "wideLayout": true,
         "showPercentChange": false
       },
@@ -157,9 +158,10 @@
           "editorMode": "code",
           "expr": "sum(dump1090_recent_aircraft_with_position{job=\"dump1090\", time_period=\"latest\", instance=~\"^$instance$\"})",
           "legendFormat": "",
-          "range": true,
+          "range": false,
           "refId": "A",
-          "intervalFactor": 2
+          "intervalFactor": 2,
+          "instant": true
         }
       ],
       "fieldConfig": {
@@ -188,12 +190,12 @@
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
-            "avg"
+            "lastNotNull"
           ],
           "fields": "",
           "values": false
         },
-        "textMode": "auto",
+        "textMode": "value",
         "wideLayout": true,
         "showPercentChange": false
       },
@@ -222,9 +224,10 @@
           "editorMode": "code",
           "expr": "max(dump1090_recent_aircraft_max_range{job=\"dump1090\", instance=~\"^$instance$\"})",
           "legendFormat": "",
-          "range": true,
+          "range": false,
           "refId": "A",
-          "intervalFactor": 2
+          "intervalFactor": 2,
+          "instant": true
         }
       ],
       "fieldConfig": {
@@ -254,12 +257,12 @@
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
-            "avg"
+            "lastNotNull"
           ],
           "fields": "",
           "values": false
         },
-        "textMode": "auto",
+        "textMode": "value",
         "wideLayout": true,
         "showPercentChange": false
       },
@@ -288,9 +291,10 @@
           "editorMode": "code",
           "expr": "sum(rate(dump1090_messages_total{job=\"dump1090\", time_period=\"latest\", instance=~\"^$instance$\"}[1m]))",
           "legendFormat": "",
-          "range": true,
+          "range": false,
           "refId": "A",
-          "intervalFactor": 2
+          "intervalFactor": 2,
+          "instant": true
         }
       ],
       "fieldConfig": {
@@ -319,12 +323,12 @@
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
-            "avg"
+            "lastNotNull"
           ],
           "fields": "",
           "values": false
         },
-        "textMode": "auto",
+        "textMode": "value",
         "wideLayout": true,
         "showPercentChange": false
       },
@@ -353,8 +357,9 @@
           "editorMode": "code",
           "expr": "max(dump1090_stats_local_peak_signal_strength_dbFS{job=\"dump1090\", time_period=\"last1min\", instance=~\"^$instance$\"})",
           "legendFormat": "",
-          "range": true,
-          "refId": "A"
+          "range": false,
+          "refId": "A",
+          "instant": true
         }
       ],
       "fieldConfig": {
@@ -383,12 +388,12 @@
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
-            "avg"
+            "lastNotNull"
           ],
           "fields": "",
           "values": false
         },
-        "textMode": "auto",
+        "textMode": "value",
         "wideLayout": true,
         "showPercentChange": false
       },
@@ -417,9 +422,10 @@
           "editorMode": "code",
           "expr": "avg(dump1090_stats_local_signal_strength_dbFS{job=\"dump1090\", time_period=\"last1min\", instance=~\"^$instance$\"})",
           "legendFormat": "",
-          "range": true,
+          "range": false,
           "refId": "A",
-          "intervalFactor": 2
+          "intervalFactor": 2,
+          "instant": true
         }
       ],
       "fieldConfig": {
@@ -448,12 +454,12 @@
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
-            "avg"
+            "lastNotNull"
           ],
           "fields": "",
           "values": false
         },
-        "textMode": "auto",
+        "textMode": "value",
         "wideLayout": true,
         "showPercentChange": false
       },
@@ -2408,8 +2414,12 @@
       {
         "current": {
           "selected": false,
-          "text": "All",
-          "value": "$__all"
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
         },
         "datasource": {
           "type": "prometheus",
@@ -2430,7 +2440,8 @@
         "regex": "",
         "skipUrlSync": false,
         "sort": 0,
-        "type": "query"
+        "type": "query",
+        "allValue": ".+"
       }
     ]
   },
@@ -2466,6 +2477,6 @@
   "timezone": "browser",
   "title": "dump1090exporter",
   "uid": "jYDJZoviz",
-  "version": 3,
+  "version": 4,
   "weekStart": ""
 }
