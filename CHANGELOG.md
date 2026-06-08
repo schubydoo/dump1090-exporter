@@ -7,6 +7,13 @@ documented in this file. The format follows
 automated by [Release Please](https://github.com/googleapis/release-please)
 from Conventional Commit messages on `master`.
 
+## [0.3.2](https://github.com/schubydoo/dump1090-exporter/compare/v0.3.1...v0.3.2) (2026-06-08)
+
+
+### Miscellaneous
+
+* release 0.3.2 ([a204ae8](https://github.com/schubydoo/dump1090-exporter/commit/a204ae8a2fc458a9358214092fc2357ab12ef480))
+
 ## [0.3.1](https://github.com/schubydoo/dump1090-exporter/compare/v0.3.0...v0.3.1) (2026-05-26)
 
 
