@@ -5,7 +5,7 @@
 # must update IN LOCKSTEP — refresh them with `tools/update-uv-shas.sh`
 # (or by hand from
 # https://github.com/astral-sh/uv/releases/download/<ver>/dist-manifest.json).
-ARG UV_VERSION=0.11.19
+ARG UV_VERSION=0.11.21
 ARG UV_SHA256_AMD64=c4c0d0a383413261af5f0f0743e1292f4aafbe907987ed83bd0ac66f0a3d7e20
 ARG UV_SHA256_ARM64=767629b64cdf078c32e42819db28d5ca868b8dc7e3a879967fadc3e4f7f66be3
 ARG UV_SHA256_ARMV7=d807c33e89c27430a68b7be52a8a0d39e08c91dba0fa295172c6ff2ce2d07a27
