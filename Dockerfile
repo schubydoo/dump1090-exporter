@@ -6,9 +6,9 @@
 # (or by hand from
 # https://github.com/astral-sh/uv/releases/download/<ver>/dist-manifest.json).
 ARG UV_VERSION=0.11.23
-ARG UV_SHA256_AMD64=9dadff5b9e7b1d2d011e41852a1cbca713d9d5d88194f2eb6bd240fa4fb0a719
-ARG UV_SHA256_ARM64=e71badaed2a2c3a404a0a00974b51c7ed5f5bc7be947916846005b739c68a5a2
-ARG UV_SHA256_ARMV7=20f4b653a17adb09cdfa7f911d46a1f254b918a2b49bef1266c735ab4c6fced0
+ARG UV_SHA256_AMD64=6be47081100ff1ce0ac7e85ba2ac12e32f2ffa6f946d78bf7f24ee9ce3a46181
+ARG UV_SHA256_ARM64=80efb615b78c1e5721e5858135cd3499609b26741220332c843bd58936053bc6
+ARG UV_SHA256_ARMV7=417e901f5873a62af344e25e08fb96d75be3a02628e59da4529b73c3693bd31b
 
 # --------------------------------------------------------------------------
 # 1. builder — install the project + its locked deps into a venv at /app/.venv
