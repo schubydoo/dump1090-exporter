@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.24
+# syntax=docker/dockerfile:1.25
 
 # Pinned uv release. Renovate's PyPI regex manager (renovate.json) bumps
 # UV_VERSION on the next master scan. The per-arch SHA256 hashes below
