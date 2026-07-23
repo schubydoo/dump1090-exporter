@@ -5,8 +5,11 @@
 # stays valid.
 #
 # Why this exists: Renovate's PyPI manager bumps UV_VERSION fine, but it
-# doesn't know about our three companion SHA ARGs. Until we have a custom
-# datasource or postUpgradeTasks support, this is a one-command refresh.
+# doesn't know about our three companion SHA ARGs. The self-hosted Renovate CE
+# runs this as a postUpgradeTask on the astral-sh/uv group bump (see the uv
+# packageRule in schubydoo/renovate-config:dump1090-exporter.json), so the
+# refreshed hashes land in the same branch as the version bump. Run it by hand
+# for a manual bump.
 #
 # Usage:
 #   tools/update-uv-shas.sh             # update ./Dockerfile in place
