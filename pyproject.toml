@@ -55,6 +55,30 @@ Homepage = "https://github.com/schubydoo/dump1090-exporter"
 Repository = "https://github.com/schubydoo/dump1090-exporter"
 Issues = "https://github.com/schubydoo/dump1090-exporter/issues"
 
+# --------------------------------------------------------------------
+# uv-only resolution constraints. These shape `uv lock` / `uv sync` but
+# are NOT published in the wheel/sdist metadata, so downstream consumers
+# who install from PyPI are unaffected.
+#
+# orjson: 3.12.0 stopped building musllinux_1_2_armv7l wheels. Upstream
+# still supports armv7 in general -- glibc armv7 wheels are still built
+# (manylinux_2_35_armv7l). What changed is specifically the musl+armv7
+# combination: the 3.11.9...3.12.0 refactor of ijl/orjson's
+# .github/workflows/artifact.yaml collapsed two musllinux jobs into one
+# whose matrix covers only musllinux_1_2_x86_64 and musllinux_1_2_aarch64,
+# dropping the armv7l and i686 musl entries.
+#
+# orjson arrives here transitively (aioprometheus depends on it) and our
+# image base is python:3.14-alpine, so on the linux/arm/v7 leg uv finds no
+# compatible wheel and falls back to a source build. rustup has no
+# arm-unknown-linux-musleabihf target -> that build fails outright.
+#
+# Revisit if orjson restores musl armv7 wheels, or if linux/arm/v7 is
+# dropped from the release platform list (.github/workflows/release.yml).
+# --------------------------------------------------------------------
+[tool.uv]
+constraint-dependencies = ["orjson<3.12"]
+
 [tool.hatch.version]
 path = "src/dump1090exporter/__init__.py"
 
