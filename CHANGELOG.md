@@ -7,6 +7,36 @@ documented in this file. The format follows
 automated by [Release Please](https://github.com/googleapis/release-please)
 from Conventional Commit messages on `master`.
 
+## [0.3.3](https://github.com/schubydoo/dump1090-exporter/compare/v0.3.2...v0.3.3) (2026-08-22)
+
+
+### Bug Fixes
+
+* **deps:** constrain orjson &lt;3.12 to keep musl armv7 wheels ([#102](https://github.com/schubydoo/dump1090-exporter/issues/102)) ([5a3ac32](https://github.com/schubydoo/dump1090-exporter/commit/5a3ac321bc3774302f530cb7c269b323e8d25ba1))
+
+
+### Dependencies
+
+Sixty-two dependency commits landed since 0.3.2. Repeated bumps of the same
+component are collapsed into one entry, linking the last update in the series.
+
+* centralize Renovate config via shared preset ([#64](https://github.com/schubydoo/dump1090-exporter/issues/64)) ([260b853](https://github.com/schubydoo/dump1090-exporter/commit/260b853b3a76442d642d86af66206d25aea415e8))
+* **ci:** update docker/login-action action to v4.6.0 ([#80](https://github.com/schubydoo/dump1090-exporter/issues/80)) ([7a07f21](https://github.com/schubydoo/dump1090-exporter/commit/7a07f2191a7fa82e8de130a14b7ac8919b0d468a)) (3 bumps)
+* **ci:** update docker/setup-buildx-action action to v4.3.0 ([#104](https://github.com/schubydoo/dump1090-exporter/issues/104)) ([1fed49d](https://github.com/schubydoo/dump1090-exporter/commit/1fed49d1a0801d515d383b7570699909a27c9ec7))
+* **ci:** update github-actions ([#74](https://github.com/schubydoo/dump1090-exporter/issues/74)) ([1ca25dc](https://github.com/schubydoo/dump1090-exporter/commit/1ca25dc78fbe9a5b68919ff3e98176e81153a7f0)) (3 grouped updates)
+* **ci:** update github/codeql-action action to v4.37.7 ([#96](https://github.com/schubydoo/dump1090-exporter/issues/96)) ([25577ad](https://github.com/schubydoo/dump1090-exporter/commit/25577ade68b29a3f7863503f27f00bd4bb9a8fd6)) (8 bumps)
+* **deps:** lock file maintenance ([#99](https://github.com/schubydoo/dump1090-exporter/issues/99)) ([2e13d8b](https://github.com/schubydoo/dump1090-exporter/commit/2e13d8becd0bd6b49c6fafadb07fc107d44b681e)) (12 refreshes)
+* **deps:** update actions/checkout action to v7 ([#49](https://github.com/schubydoo/dump1090-exporter/issues/49)) ([d7e67cd](https://github.com/schubydoo/dump1090-exporter/commit/d7e67cd2a4d0c453e3480fd1fe4e33f3af617c16))
+* **deps:** update astral-sh/setup-uv action to v10 ([#95](https://github.com/schubydoo/dump1090-exporter/issues/95)) ([e5835b0](https://github.com/schubydoo/dump1090-exporter/commit/e5835b0e51b3dde1a6d4a2a98104b82edc452fa5)) (2 bumps)
+* **deps:** update astral-sh/uv ([#55](https://github.com/schubydoo/dump1090-exporter/issues/55)) ([f736d53](https://github.com/schubydoo/dump1090-exporter/commit/f736d53ac93c7793b943f9d52dbccda68a51806b)) (3 bumps)
+* **deps:** update demo stack ([#67](https://github.com/schubydoo/dump1090-exporter/issues/67)) ([5f2133d](https://github.com/schubydoo/dump1090-exporter/commit/5f2133d1f3f63bb215f8bd002de898082487d330)) (2 bumps)
+* **deps:** update dependency uv to v0.12.5 ([#98](https://github.com/schubydoo/dump1090-exporter/issues/98)) ([940ca59](https://github.com/schubydoo/dump1090-exporter/commit/940ca592e6158a0675c0957325781bb32d2ba331)) (10 bumps)
+* **deps:** update docker/dockerfile docker tag to v1.26 ([#84](https://github.com/schubydoo/dump1090-exporter/issues/84)) ([bfc7ec1](https://github.com/schubydoo/dump1090-exporter/commit/bfc7ec100a747d356a10e6b4b01af5a56e916534)) (3 bumps)
+* **deps:** update grafana/grafana docker tag to v13.2.0 ([#101](https://github.com/schubydoo/dump1090-exporter/issues/101)) ([1f44afe](https://github.com/schubydoo/dump1090-exporter/commit/1f44afee536f2536b9ee0bbf7a5d0cd8bbcb376c)) (4 bumps)
+* **deps:** update prom/prometheus docker tag to v3.14.0 ([#100](https://github.com/schubydoo/dump1090-exporter/issues/100)) ([6ab087c](https://github.com/schubydoo/dump1090-exporter/commit/6ab087cbb232df8420f81662d3bb111ed71fb145)) (3 bumps)
+* **deps:** update python:3.14-alpine docker digest to 05b2b8b ([#94](https://github.com/schubydoo/dump1090-exporter/issues/94)) ([0497f99](https://github.com/schubydoo/dump1090-exporter/commit/0497f9939d7348f85f887409a3bb154a744f7a53)) (5 digest refreshes)
+* retire renovate-uv-shas.yml workflow (replaced by Renovate CE postUpgradeTask) ([#72](https://github.com/schubydoo/dump1090-exporter/issues/72)) ([0a2e4ef](https://github.com/schubydoo/dump1090-exporter/commit/0a2e4ef714fc7b6ce07093f19322cea266ffe953))
+
 ## [0.3.2](https://github.com/schubydoo/dump1090-exporter/compare/v0.3.1...v0.3.2) (2026-06-08)
 
 
