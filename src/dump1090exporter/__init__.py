@@ -2,6 +2,6 @@
 
 from .exporter import Dump1090Exporter
 
-__version__ = "0.3.2"
+__version__ = "0.3.3"
 
 __all__ = ["Dump1090Exporter", "__version__"]
