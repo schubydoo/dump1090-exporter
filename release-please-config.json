@@ -25,7 +25,7 @@
     { "type": "perf", "section": "Performance" },
     { "type": "revert", "section": "Reverts" },
     { "type": "docs", "section": "Documentation", "hidden": true },
-    { "type": "chore", "section": "Dependencies", "hidden": false },
+    { "type": "chore", "section": "Miscellaneous", "hidden": true },
     { "type": "ci", "section": "Continuous Integration", "hidden": true },
     { "type": "build", "section": "Build System & Dependencies", "hidden": false },
     { "type": "test", "section": "Tests", "hidden": true },
