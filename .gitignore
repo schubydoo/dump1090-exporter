@@ -143,7 +143,9 @@ CLAUDE.md
 CLAUDE.local.md
 GEMINI.md
 AGENTS.md
-.claude/
+/.claude/
+/.worktreeinclude
+/scratch/
 .gitnexus/
 .cursor/
 .cursorrules
