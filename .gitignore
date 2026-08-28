@@ -139,10 +139,9 @@ $RECYCLE.BIN/
 
 # ---- AI / agent / assistant artifacts ----
 # Keep AI scratch files, plans, and config out of the repo by default.
-CLAUDE.md
+# CLAUDE.md + AGENTS.md are committed (agent guide); the rest stay local.
 CLAUDE.local.md
 GEMINI.md
-AGENTS.md
 /.claude/
 /.worktreeinclude
 /scratch/
