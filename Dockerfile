@@ -5,10 +5,10 @@
 # must update IN LOCKSTEP — refresh them with `tools/update-uv-shas.sh`
 # (or by hand from
 # https://github.com/astral-sh/uv/releases/download/<ver>/dist-manifest.json).
-ARG UV_VERSION=0.12.7
-ARG UV_SHA256_AMD64=3d64d44ed67da7908dc7f5c4d64ebb44bad326fa17f8a0a52fc9a7793017bbe1
-ARG UV_SHA256_ARM64=6dcf60e3c085de88ace3671b949ca99f0652be561ff5627f0d21394140f041db
-ARG UV_SHA256_ARMV7=4b82298033bf6d20ee7c585a5da1448d681945f29b0dae5e73b72f83496f0e61
+ARG UV_VERSION=0.12.8
+ARG UV_SHA256_AMD64=6ca4597639c97e921fb915e113061ce8e4a14ead9e42a1ead521dbb0a6763795
+ARG UV_SHA256_ARM64=975917badc8370163989e5bbe5a7c69bf922d19f8e57cb2652531bbffc935f84
+ARG UV_SHA256_ARMV7=794b2099dd9db9c359958fa8fcd0407bf3bc2682e020d40b8d20e046f3490a18
 
 # --------------------------------------------------------------------------
 # 1. builder — install the project + its locked deps into a venv at /app/.venv
