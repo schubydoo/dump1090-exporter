@@ -17,7 +17,7 @@ ARG UV_SHA256_ARMV7=421c5f9c53d49088e705e7a64fea147082a2191178ea1d8c51d9ad758ca8
 # Pinned-Dependencies check is satisfied and supply-chain attacks via tag
 # repointing are blocked. Renovate's docker manager bumps tag + digest in
 # the same PR.
-FROM python:3.14-alpine@sha256:016508ba505da24f7139765bc4bb669df4e88eb2f12eeadd571bf2f88d7533df AS builder
+FROM python:3.14-alpine@sha256:9e9fde4d32eedce0b661d9ab91e826b62dddf28e928c230ec55f1866cac66b01 AS builder
 
 # ARGs declared before the first FROM are "global" — they substitute into
 # the FROM line(s) but are invisible to RUN inside the stage unless
@@ -77,7 +77,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Same digest as the builder — keep them in lockstep so the venv built
 # against builder's libpython matches runtime's. Renovate's docker manager
 # bumps every `python:X.Y-alpine@sha256:...` reference in a single PR.
-FROM python:3.14-alpine@sha256:016508ba505da24f7139765bc4bb669df4e88eb2f12eeadd571bf2f88d7533df AS runtime
+FROM python:3.14-alpine@sha256:9e9fde4d32eedce0b661d9ab91e826b62dddf28e928c230ec55f1866cac66b01 AS runtime
 
 LABEL org.opencontainers.image.title="dump1090exporter" \
       org.opencontainers.image.description="Prometheus metrics exporter for the dump1090 Mode S decoder." \
