@@ -147,7 +147,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
       - name: Install zizmor
-        run: uv tool install zizmor==1.32.0
+        run: uv tool install zizmor==1.33.1
       - name: Run zizmor
         run: zizmor --format sarif . > results.sarif
         env:
